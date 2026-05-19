@@ -1,10 +1,17 @@
 from fastapi import FastAPI
+from pydantic import BaseModel 
 
 app = FastAPI()
 
+class Player(BaseModel):
+    id: int
+    name: str
+    club: str
+    country: str
+    goals: int
+    assists: int
 
 players = [
-
     {
         "id": 1,
         "name": "Messi",
@@ -91,26 +98,65 @@ players = [
 
 @app.get("/")
 def home():
-
     return {
         "message": "Football Stats API"
     }
 
+@app.post("/players")
+def add_player(player: Player):
+    for existing_player in players:
+        if existing_player["id"] == player.id:
+            return {
+                "error": "Player ID already exists"
+            }
+    players.append(player.dict())
+    return {
+        "message": "Player added successfully",
+        "player": player
+    }
+
+
+
+@app.put("/players/{player_id}")
+def update_player(player_id: int, updated_player: Player):
+    for player in players:
+
+        if player["id"] == player_id:
+            player["name"] = updated_player.name
+            player["club"] = updated_player.club
+            player["country"] = updated_player.country
+            player["goals"] = updated_player.goals
+            player["assists"] = updated_player.assists
+            return {
+                "message": "Player updated successfully",
+                "updated_player": player
+            }
+    return {
+        "error": "Player not found"
+    }
 
 @app.get("/players")
 def get_players():
-
     return players
 
 
 @app.get("/players/{player_id}")
 def get_player(player_id: int):
-
     for player in players:
-
         if player["id"] == player_id:
             return player
+    return {
+        "error": "Player not found"
+    }
 
+@app.delete("/players/{player_id}")
+def delete_player(player_id: int):
+    for player in players:
+        if player["id"] == player_id:
+            players.remove(player)
+            return {
+                "message": "Player deleted successfully"
+            }
     return {
         "error": "Player not found"
     }
@@ -118,20 +164,14 @@ def get_player(player_id: int):
 
 @app.get("/compare/{player1_id}/{player2_id}")
 def compare_players(player1_id: int, player2_id: int):
-
     player1 = None
     player2 = None
-
     for player in players:
-
         if player["id"] == player1_id:
             player1 = player
-
         if player["id"] == player2_id:
             player2 = player
-
     if player1 is None or player2 is None:
-
         return {
             "error": "Player not found"
         }
@@ -157,12 +197,11 @@ def compare_players(player1_id: int, player2_id: int):
     return {
 
         "player_1_full_stats": player1,
-
         "player_2_full_stats": player2,
-
         "goals_leader": goals_leader,
         "goals": goals_number,
-
         "assists_leader": assists_leader,
         "assists": assists_number
     }
+
+    
